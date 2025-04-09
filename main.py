@@ -2,6 +2,7 @@ from fastapi import FastAPI, UploadFile, File
 from app.ocr_engine import extract_text
 from app.parser_ktp import parse_ktp_text
 from app.parser_npwp import parse_npwp_text
+from app.parser_CC import extract_credit_card_info
 import shutil
 import os
 
@@ -15,7 +16,15 @@ async def scan_document(doc_type: str, file: UploadFile = File(...)):
 
     try:
         text = extract_text(path)
-        result = parse_ktp_text(text) if doc_type.lower() == "ktp" else parse_npwp_text(text)
+        doc_type = doc_type.lower()
+        if doc_type == "ktp":
+            result = parse_ktp_text(text)
+        elif doc_type == "npwp":
+            result = parse_npwp_text(text)
+        elif doc_type in ["cc", "creditcard"]:
+            result = extract_credit_card_info(text)
+        else:
+            result = {"error": f"Unsupported document type: {doc_type}"}
 
         return {"text": text, "parsed": result}
     finally:
